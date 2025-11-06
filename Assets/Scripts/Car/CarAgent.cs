@@ -104,7 +104,7 @@ public class CarAgent : Agent
             results.AddRange(sensor.Hits());
         });
         // 速度
-        Vector3 local_v = CarRb.transform.InverseTransformDirection(CarRb.velocity);
+        Vector3 local_v = CarRb.transform.InverseTransformDirection(CarRb.linearVelocity);
         for(int i = 0; i < 3; i++) {
             results.Add(local_v[i] / 5.0f);
         }
@@ -139,7 +139,7 @@ public class CarAgent : Agent
         }
     }
 
-    public override int GetState() {
+    public override int GetState() { 
         var stateDivide = 3;
         var results = new List<double>();
         var r = 0;
@@ -160,29 +160,29 @@ public class CarAgent : Agent
             }
         }
 
-        for(int i = 0; i < filteredResult.Count; i++) {
+        for(int i = 0; i < filteredResult.Count; i++) { //　各センサーの値を0以上stateDivide未満の整数に離散化
             var v = Mathf.FloorToInt(Mathf.Lerp(0, stateDivide - 1, (float)filteredResult[i]));
             if(filteredResult[i] >= 0.99f) {
                 v = stateDivide - 1;
             }
-            r += (int)(v * Mathf.Pow(stateDivide, i));
+            r += (int)(v * Mathf.Pow(stateDivide, i)); // 各センサの離散化した値を一つの離散変数rにまとめる
         }
         var numStates = (int)Mathf.Pow(stateDivide, filteredResult.Count);
         int n;
-        if(CarRb.velocity.magnitude < 10) { n = 0; }
-        else if(CarRb.velocity.magnitude < 15) { n = 1; }
+        if(CarRb.linearVelocity.magnitude < 10) { n = 0; } // 車の速度の絶対値を状態として加える
+        else if(CarRb.linearVelocity.magnitude < 15) { n = 1; }
         else { n = 2; }
         r += numStates * n;
         return r;
     }
 
-    public override List<double> CollectObservations() {
+    public override List<double> CollectObservations() { // 環境や車についての情報を取得し、現在の環境におけるエージェントの状態を決定する
         // センサーの距離をリストに追加する
         var results = new List<double>();
         Array.ForEach(Sensors, sensor => {
             results.AddRange(sensor.Hits());
         });
-        Vector3 local_v = CarRb.transform.InverseTransformDirection(CarRb.velocity);
+        Vector3 local_v = CarRb.transform.InverseTransformDirection(CarRb.linearVelocity);
         results.Add(local_v.x / 5.0f);
         results.Add(local_v.z / 5.0f);
         return results;
@@ -201,7 +201,7 @@ public class CarAgent : Agent
         /*
             必要に応じて追加で格納する情報を追加
         */
-        results.Add(CarRb.velocity.magnitude);
+        results.Add(CarRb.linearVelocity.magnitude);
         return results;
     }
 
@@ -258,9 +258,9 @@ public class CarAgent : Agent
         }
         var braking = Mathf.Clamp((float)vectorAction[2], 0.0f, 1.0f);
 
-        Controller.SteerInput = steering;
-        Controller.GasInput = gasInput;
-        Controller.BrakeInput = braking;
+        Controller.SteerInput = steering; // ハンドル
+        Controller.GasInput = gasInput; // アクセル
+        Controller.BrakeInput = braking; // ブレーキ
         LastPosition = transform.position;
     }
 
@@ -279,7 +279,7 @@ public class CarAgent : Agent
     /// 衝突時に呼び出されるコールバック
     /// </summary>
     /// <param name="collision"></param>
-    public void OnCollisionEnter(Collision collision) {
+    public void OnCollisionEnter(Collision collision) { // オブジェクトに衝突したときのコールバック関数
         if(collision.gameObject.tag == "wall") {
             if (BackUpOnCollision) {
                 StartBackingUp();
@@ -289,7 +289,7 @@ public class CarAgent : Agent
         }
     }
 
-    public void OnTriggerEnter(Collider other) {
+    public void OnTriggerEnter(Collider other) { // 逆走した時のコールバック間数
         var waypoint = other.GetComponent<Waypoint>();
         if(waypoint == null) {
             return;
@@ -319,7 +319,7 @@ public class CarAgent : Agent
     }
 
     public override void Stop() {
-        CarRb.velocity = Vector3.zero;
+        CarRb.linearVelocity = Vector3.zero;
         CarRb.angularVelocity = Vector3.zero;
         Controller.Stop();
     }

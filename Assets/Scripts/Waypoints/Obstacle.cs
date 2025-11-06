@@ -82,7 +82,7 @@ public class Obstacle : MonoBehaviour
         ApplyScale();
         var rg = GetComponentInChildren<Rigidbody>();
         if(rg != null) {
-            rg.velocity = Vector3.zero;
+            rg.linearVelocity = Vector3.zero;
             rg.angularVelocity = Vector3.zero;
             rg.isKinematic = true;
         }
@@ -93,7 +93,7 @@ public class Obstacle : MonoBehaviour
         ApplyScale();
         var rg = GetComponentInChildren<Rigidbody>();
         if(rg != null) {
-            rg.velocity = Vector3.zero;
+            rg.linearVelocity = Vector3.zero;
             rg.angularVelocity = Vector3.zero;
             rg.isKinematic = true;
         }

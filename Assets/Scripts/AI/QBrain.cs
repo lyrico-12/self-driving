@@ -15,7 +15,7 @@ public class QBrain : Brain
     private float Gamma { get; set; } = 0.75f;
     private float Alpha { get; set; } = 0.1f;
 
-    public void CreateTable() {
+    public void CreateTable() { // Qテーブルの初期化
         QTable = new float[StateSize][];
         for(int i = 0; i < StateSize; i++) {
             QTable[i] = new float[ActionSize];
