@@ -7317,7 +7317,7 @@ MonoBehaviour:
   totalPopulation: 100
   tournamentSelection: 85
   eliteSelection: 4
-  selectedInputs: 01010101010000000000000000000000000000000000000000000000000000000000000000000000010001000000
+  selectedInputs: 01010101010000000000000000000000000000000000000000000000010000010000000000000000010001010001
   sensorAngleConfig:
   - 50
   - 70
@@ -7331,6 +7331,8 @@ MonoBehaviour:
   gObject: {fileID: 711008878}
   isChallenge4: 0
   populationText: {fileID: 1137378402}
+  stagePrefabs: []
+  stageRoot: {fileID: 0}
 --- !u!114 &490292558
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10891,6 +10893,56 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: LearnCar
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: minSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: targetSpeed
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: reversePenalty
+      value: -0.004
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: lowSpeedPenalty
+      value: -0.002
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: nearWallPenalty
+      value: -0.002
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: stepRewardScale
+      value: 0.004
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: highSpeedPenalty
+      value: -0.0005
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: nearWallThreshold
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: useNearWallPenalty
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: collisionPenaltyScale
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7648801939920701222, guid: 48764237b4fd4444482ea11373f92b16,
         type: 3}
@@ -16931,6 +16983,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 393455344}
     m_Modifications:
+    - target: {fileID: 1334959830, guid: 2f298cd1f27de034497049b26ced25fb, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 256
+      objectReference: {fileID: 0}
     - target: {fileID: 738837422465160095, guid: 2f298cd1f27de034497049b26ced25fb,
         type: 3}
       propertyPath: m_AnchorMax.y

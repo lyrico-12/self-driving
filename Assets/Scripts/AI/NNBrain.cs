@@ -189,7 +189,7 @@ public class NNBrain : Brain
     }
 
     private float MutRate(int generation) {
-        return 0.2f * (float)Math.Max(0, 1 - generation / 100);
+        return 0.3f * (float)Math.Max(0, 1 - generation / 100);
     }
 
     public override void Save(string path) {

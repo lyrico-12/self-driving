@@ -1,5 +1,3 @@
-// 学習の流れ
-
 // SerialID: [77a855b2-f53d-4b80-9c94-c40562952b74]
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,7 +9,7 @@ using System.Linq;
 using UnityEditor.SceneManagement;
 #endif
 
-public class NEEnvironment : Environment
+public class NEEnvironmentNew : Environment
 {
     [Header("Settings"), SerializeField] private int totalPopulation = 100;
     private int TotalPopulation { get { return totalPopulation; } }
@@ -77,6 +75,15 @@ public class NEEnvironment : Environment
     private float GenMaxSpeed = float.NegativeInfinity;
     private float GenMinSpeed = float.PositiveInfinity;
 
+    [Header("Stage (Prefab selection)")]
+    [SerializeField] private List<GameObject> stagePrefabs = new List<GameObject>(); // Prefab を割り当て
+    [SerializeField] private Transform stageRoot; // 空の親(任意)。未設定なら自動生成
+    private GameObject currentStage;
+
+    private void Awake() {
+        EnsureStageRoot();
+    }
+
     private void Start() {
         // Calculate and set input size.
         int sensorCount = 0;
@@ -116,6 +123,11 @@ public class NEEnvironment : Environment
         if (IsChallenge4) {
             Obstacles.AddRange(FindObjectsOfType<Obstacle>());
         }
+
+        // 最初のステージを生成
+        SpawnStageForGeneration(Generation);
+        RebindStageObjects();
+        UpdateText();
     }
 
     void SetStartAgents() {
@@ -202,6 +214,11 @@ public class NEEnvironment : Environment
         GenMaxSpeed = float.NegativeInfinity;
         GenMinSpeed = float.PositiveInfinity;
 
+        // ステージ入れ替え
+        ClearStage();
+        SpawnStageForGeneration(Generation + 1);
+        RebindStageObjects();
+
         // エージェントのリセットと開始
         Agents.ForEach(a => a.Reset());
         SetStartAgents();
@@ -266,6 +283,41 @@ public class NEEnvironment : Environment
             + "\nPrev gen AvgSpeed: " + LastGenAvgSpeed.ToString("F2") + " m/s"
             + "\nPrev gen MaxSpeed: " + LastGenMaxSpeed.ToString("F2") + " m/s"
             + "\nPrev gen MinSpeed: " + LastGenMinSpeed.ToString("F2") + " m/s";
+    }
+
+    private void EnsureStageRoot() {
+        if (stageRoot == null) {
+            var go = new GameObject("StageRoot");
+            stageRoot = go.transform;
+        }
+    }
+
+    private void ClearStage() {
+        if (currentStage != null) {
+            Destroy(currentStage);
+            currentStage = null;
+        }
+    }
+
+    private void SpawnStageForGeneration(int gen) {
+        if (stagePrefabs == null || stagePrefabs.Count == 0) return;
+
+        // 例: ランダム選択（必要なら gen に応じて選択ロジックを変える）
+        int idx = UnityEngine.Random.Range(0, stagePrefabs.Count);
+        var prefab = stagePrefabs[idx];
+
+        currentStage = Instantiate(prefab, Vector3.zero, Quaternion.identity, stageRoot);
+    }
+
+    // ステージ生成後に、参照を取り直す（障害物やWaypointなど）
+    private void RebindStageObjects() {
+        Obstacles.Clear();
+        Obstacles.AddRange(FindObjectsOfType<Obstacle>());
+
+        // 必要なら Waypoint 系も取得して各 CarAgent に渡す処理をここで行う
+        // 例:
+        // var waypoints = FindObjectsOfType<Waypoint>().OrderBy(w => w.Index).ToList();
+        // foreach (var a in Agents) ((CarAgent)a).SetWaypoints(waypoints);
     }
 
     private struct AgentPair

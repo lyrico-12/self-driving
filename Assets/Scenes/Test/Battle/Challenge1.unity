@@ -33270,7 +33270,7 @@ MonoBehaviour:
   - agent: {fileID: 1531592676}
     brain: {fileID: 11400000, guid: 3cfdf57d15b6b4578a622e72011b28fb, type: 2}
   - agent: {fileID: 768332851}
-    brain: {fileID: 11400000, guid: 8db2c7a093bec01438a7955aa983e73d, type: 2}
+    brain: {fileID: 11400000, guid: 1ca0e19baca3041e297ef4b3c8eef59d, type: 2}
   populationText: {fileID: 1750134303}
   name1Text: {fileID: 1137378409}
   name2Text: {fileID: 1137378408}

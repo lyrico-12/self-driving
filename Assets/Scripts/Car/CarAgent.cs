@@ -38,6 +38,32 @@ public class CarAgent : Agent
     // 次のWaypointの方向（グローバル座標）
     private Vector3 NextWaypointDirection = Vector3.forward;
 
+    [SerializeField] private bool useDenseSpeedReward = true;
+    [SerializeField] private bool useForwardComponent = true;   // 進行方向成分で評価（true）。純粋な速度で評価したいなら false
+    [SerializeField] private float targetSpeed = 15f;           // 目標速度[m/s]
+    [SerializeField] private float minSpeed = 3f;             // 遅すぎ判定
+    [SerializeField] private float maxSpeed = 35f;              // 速すぎ判定
+    [SerializeField] private float stepRewardScale = 0.004f;   // 速度に対する加点のスケール
+    [SerializeField] private float lowSpeedPenalty = -0.002f;   // 遅すぎ減点/step
+    [SerializeField] private float highSpeedPenalty = -0.0005f;  // 速すぎ減点/step
+    [SerializeField] private float reversePenalty = -0.004f;    // 逆走減点/step
+    [SerializeField] private float collisionPenaltyScale = 1f;    // 衝突減点のスケール
+
+    [SerializeField] private float nearWallThreshold = 0.15f;     // 壁接近とみなす正規化距離
+    [SerializeField] private float nearWallPenalty = -0.0015f;    // 1ステップ減点
+    [SerializeField] private bool useNearWallPenalty = false;
+
+    // エピソード内の速度統計
+    private float speedSum = 0f;
+    private int speedCount = 0;
+    private float episodeMaxSpeed = 0f;
+    private float episodeMinSpeed = float.PositiveInfinity;
+
+    // 公開用プロパティ（環境側が参照）
+    public float EpisodeAvgSpeed => speedCount > 0 ? speedSum / speedCount : 0f;
+    public float EpisodeMaxSpeed => speedCount > 0 ? episodeMaxSpeed : 0f;
+    public float EpisodeMinSpeed => speedCount > 0 ? episodeMinSpeed : 0f;
+
     private void Awake() {
         CarRb = GetComponent<Rigidbody>();
         Controller = GetComponent<CarController>();
@@ -52,6 +78,11 @@ public class CarAgent : Agent
         LocalStep = 0;
         LastPosition = StartPosition;
         TotalDistance = 0;
+
+        speedSum = 0f;
+        speedCount = 0;
+        episodeMaxSpeed = 0f;
+        episodeMinSpeed = float.PositiveInfinity;
     }
 
     public override void AgentReset() {
@@ -71,6 +102,11 @@ public class CarAgent : Agent
         LastPosition = StartPosition;
 
         WaypointIndex = 0;
+
+        speedSum = 0f;
+        speedCount = 0;
+        episodeMaxSpeed = 0f;
+        episodeMinSpeed = float.PositiveInfinity;
     }
 
     /// <summary>
@@ -237,17 +273,28 @@ public class CarAgent : Agent
         LocalStep++;
         TotalDistance += (transform.position - LastPosition).magnitude;
 
-        if(IsLearning) {
-            if(CurrentStep > CurrentStepMax) {
+        if (IsLearning)
+        {
+            if (CurrentStep > CurrentStepMax)
+            {
                 DoneWithReward(TotalDistance);
                 return;
             }
 
-            if(LocalStep > LocalStepMax) {
+            if (LocalStep > LocalStepMax)
+            {
                 DoneWithReward(-1.0f / TotalDistance);
                 return;
             }
         }
+        
+        // 速度統計の更新（毎ステップ）
+        float currentSpeed = CarRb.linearVelocity.magnitude;
+        speedSum += currentSpeed;
+        speedCount++;
+        if (currentSpeed > episodeMaxSpeed) episodeMaxSpeed = currentSpeed;
+        if (currentSpeed < episodeMinSpeed) episodeMinSpeed = currentSpeed;
+
 
         var steering = Mathf.Clamp((float)vectorAction[0], -1.0f, 1.0f);
         float gasInput = 0.0f;
@@ -261,6 +308,26 @@ public class CarAgent : Agent
         Controller.SteerInput = steering; // ハンドル
         Controller.GasInput = gasInput; // アクセル
         Controller.BrakeInput = braking; // ブレーキ
+
+        // 密報酬（速度）
+        if (useDenseSpeedReward)
+        {
+            float dense = CalcSpeedDenseReward();
+            if (dense > 0f && !AllowPlusReward) dense = 0f;
+
+            // ML-Agents 互換の Agent なら AddReward が使えます
+            AddReward(dense);
+            // AddReward が無い場合は、SetReward(GetReward()+dense) 等に置き換えてください
+        }
+        
+        // 壁接近ペナルティ
+        if (useNearWallPenalty) {
+            float minWallDist = GetMinWallSensorDistance();
+            if (minWallDist >= 0f && minWallDist < nearWallThreshold) {
+                AddReward(nearWallPenalty);
+            }
+        }
+
         LastPosition = transform.position;
     }
 
@@ -284,7 +351,7 @@ public class CarAgent : Agent
             if (BackUpOnCollision) {
                 StartBackingUp();
             } else {
-                DoneWithReward(-1.0f / TotalDistance);
+                DoneWithReward(-(1.0f / TotalDistance) * collisionPenaltyScale);
             }
         }
     }
@@ -318,10 +385,66 @@ public class CarAgent : Agent
         NextWaypointDirection = waypoint.NextDirection;
     }
 
-    public override void Stop() {
+    public override void Stop()
+    {
         CarRb.linearVelocity = Vector3.zero;
         CarRb.angularVelocity = Vector3.zero;
         Controller.Stop();
+    }
+
+    private float CalcSpeedDenseReward()
+    {
+        Vector3 v = CarRb.linearVelocity;
+        float speed = v.magnitude;
+        if (speed < 1e-3f)
+        {
+            // ほぼ停止は遅すぎペナルティのみ
+            return lowSpeedPenalty;
+        }
+
+        Vector3 trackDir = NextWaypointDirection.sqrMagnitude > 1e-6f
+            ? NextWaypointDirection.normalized
+            : Vector3.forward;
+
+        float forwardSpeed = Vector3.Dot(v, trackDir);
+
+        float dense = 0f;
+
+        // 目標速度に近づくほど加点（進行方向成分 or 純速度）
+        float basis = useForwardComponent ? Mathf.Max(forwardSpeed, 0f) : speed;
+        float ratio = Mathf.Clamp01(basis / Mathf.Max(targetSpeed, 0.01f));
+        dense += ratio * stepRewardScale;
+
+        // 遅すぎ・速すぎのペナルティ
+        if (speed < minSpeed) dense += lowSpeedPenalty;
+        if (speed > maxSpeed) dense += highSpeedPenalty;
+
+        // 逆走（進行方向が負）
+        if (forwardSpeed < -0.5f) dense += reversePenalty;
+
+        return dense;
+    }
+    
+    // 壁センサー距離の最小値取得（Hits() は実距離[m]を返す前提）
+    // ここで各センサーの最大距離で割って 0〜1 に正規化して最小値を返す
+    private float GetMinWallSensorDistance() {
+        if (Sensors == null) return -1f;
+
+        float minNorm = float.PositiveInfinity;
+        foreach (var sensor in Sensors) {
+            var hits = sensor.Hits();
+            if (hits == null || hits.Count == 0) continue;
+
+            float maxDist = sensor.Distance;           // そのセンサーの最大到達距離[m]
+            if (maxDist <= 1e-6f) continue;            // 0除算防止
+
+            for (int i = 0; i < hits.Count; i++) {
+                float raw = (float)hits[i];            // 実距離[m]（未ヒット時は maxDist が返る実装）
+                float norm = Mathf.Clamp01(raw / maxDist); // 0〜1 に正規化（近いほど小さい）
+                if (norm < minNorm) minNorm = norm;
+            }
+        }
+        return float.IsInfinity(minNorm) ? -1f : minNorm;
     }
 
     private void DoneWithReward(float reward) {

@@ -6079,6 +6079,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
         type: 3}
+      propertyPath: minSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: targetSpeed
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
       propertyPath: localStepMax
       value: 200
       objectReference: {fileID: 0}
@@ -6086,6 +6096,11 @@ PrefabInstance:
         type: 3}
       propertyPath: currentStepMax
       value: 5000
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: useNearWallPenalty
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7648801939920701222, guid: 48764237b4fd4444482ea11373f92b16,
         type: 3}
