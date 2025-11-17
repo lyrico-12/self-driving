@@ -76,15 +76,11 @@ public class NEEnvironmentNew : Environment
     private float GenMinSpeed = float.PositiveInfinity;
 
     [Header("Stage (Prefab selection)")]
-    [SerializeField] private List<GameObject> stagePrefabs = new List<GameObject>(); // Prefab を割り当て
-    [SerializeField] private Transform stageRoot; // 空の親(任意)。未設定なら自動生成
-    private GameObject currentStage;
+    [SerializeField] private StageManager stageManager; // ← 追加
 
-    private void Awake() {
-        EnsureStageRoot();
-    }
 
     private void Start() {
+        // 1) 入力次元などの初期化
         // Calculate and set input size.
         int sensorCount = 0;
         foreach (bool value in selectedInputs)
@@ -106,27 +102,30 @@ public class NEEnvironmentNew : Environment
             Brains.Add(new NNBrain(InputSize, HiddenSize, HiddenLayers, OutputSize));
         }
 
+        // 2) 先にステージ生成
+        if (stageManager != null) {
+            stageManager.InitFirstStage(Generation);
+        }
+
+        // 3) エージェント生成（まだ位置は気にしない）
         for(int i = 0; i < NAgents; i++) {
             var obj = Instantiate(GObject);
             obj.SetActive(true);
             GObjects.Add(obj);
             Agents.Add(obj.GetComponent<Agent>());
         }
-        
-        foreach(Agent agent in Agents)
-        {
+        foreach(Agent agent in Agents) {
             agent.SetAgentConfig(sensorAngleConfig);
         }
+
+        // 4) スポーン地点へ配置して開始姿勢を更新
+        PlaceAgentsAtStageSpawns();
 
         BestRecord = -9999;
         SetStartAgents();
         if (IsChallenge4) {
             Obstacles.AddRange(FindObjectsOfType<Obstacle>());
         }
-
-        // 最初のステージを生成
-        SpawnStageForGeneration(Generation);
-        RebindStageObjects();
         UpdateText();
     }
 
@@ -199,15 +198,12 @@ public class NEEnvironmentNew : Environment
 
     private void SetNextGeneration() {
         AvgReward = SumReward / TotalPopulation;
-
-        // 現世代の集計結果を「前世代」表示用に確定
         LastGenAvgSpeed = SumEpisodeAvgSpeed / TotalPopulation;
         LastGenMaxSpeed = GenMaxSpeed;
         LastGenMinSpeed = GenMinSpeed;
 
         GenPopulation();
 
-        // 次世代に向けてリセット
         SumReward = 0;
         GenBestRecord = -9999;
         SumEpisodeAvgSpeed = 0f;
@@ -215,11 +211,12 @@ public class NEEnvironmentNew : Environment
         GenMinSpeed = float.PositiveInfinity;
 
         // ステージ入れ替え
-        ClearStage();
-        SpawnStageForGeneration(Generation + 1);
-        RebindStageObjects();
+        if (stageManager != null) {
+            stageManager.SwitchStage(Generation + 1);
+        }
 
-        // エージェントのリセットと開始
+        // 新ステージのSpawnPointへ配置し直してからReset
+        PlaceAgentsAtStageSpawns();
         Agents.ForEach(a => a.Reset());
         SetStartAgents();
         UpdateText();
@@ -275,7 +272,8 @@ public class NEEnvironmentNew : Environment
     }
 
     private void UpdateText() {
-        PopulationText.text = "Population: " + (TotalPopulation - CurrentBrains.Count) + "/" + TotalPopulation
+        PopulationText.text = "Current Stage: " + (stageManager != null && stageManager.GetSpawnPoints().Count > 0 ? stageManager.GetSpawnPoints()[0].parent.name : "N/A")
+            + "\nPopulation: " + (TotalPopulation - CurrentBrains.Count) + "/" + TotalPopulation
             + "\nGeneration: " + (Generation + 1)
             + "\nBest Record: " + BestRecord
             + "\nBest this gen: " + GenBestRecord
@@ -285,39 +283,27 @@ public class NEEnvironmentNew : Environment
             + "\nPrev gen MinSpeed: " + LastGenMinSpeed.ToString("F2") + " m/s";
     }
 
-    private void EnsureStageRoot() {
-        if (stageRoot == null) {
-            var go = new GameObject("StageRoot");
-            stageRoot = go.transform;
+    // SpawnPointに配置するヘルパ
+    private void PlaceAgentsAtStageSpawns()
+    {
+        var spawns = stageManager != null ? stageManager.GetSpawnPoints() : Array.Empty<Transform>();
+        if (spawns == null || spawns.Count == 0)
+        {
+            Debug.LogWarning("NEEnvironmentNew: No SpawnPoint found in current stage. Agents keep current positions.");
+            return;
         }
-    }
-
-    private void ClearStage() {
-        if (currentStage != null) {
-            Destroy(currentStage);
-            currentStage = null;
+        for (int i = 0; i < Agents.Count; i++)
+        {
+            var t = spawns[i % spawns.Count];
+            if (Agents[i] is CarAgent car)
+            {
+                car.SetStartPose(t.position, t.rotation, true);
+            }
+            else
+            {
+                Agents[i].transform.SetPositionAndRotation(t.position, t.rotation);
+            }
         }
-    }
-
-    private void SpawnStageForGeneration(int gen) {
-        if (stagePrefabs == null || stagePrefabs.Count == 0) return;
-
-        // 例: ランダム選択（必要なら gen に応じて選択ロジックを変える）
-        int idx = UnityEngine.Random.Range(0, stagePrefabs.Count);
-        var prefab = stagePrefabs[idx];
-
-        currentStage = Instantiate(prefab, Vector3.zero, Quaternion.identity, stageRoot);
-    }
-
-    // ステージ生成後に、参照を取り直す（障害物やWaypointなど）
-    private void RebindStageObjects() {
-        Obstacles.Clear();
-        Obstacles.AddRange(FindObjectsOfType<Obstacle>());
-
-        // 必要なら Waypoint 系も取得して各 CarAgent に渡す処理をここで行う
-        // 例:
-        // var waypoints = FindObjectsOfType<Waypoint>().OrderBy(w => w.Index).ToList();
-        // foreach (var a in Agents) ((CarAgent)a).SetWaypoints(waypoints);
     }
 
     private struct AgentPair

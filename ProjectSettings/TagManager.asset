@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 3
   tags:
   - wall
+  - SpawnPoint
+  - CameraAnchor
   layers:
   - Default
   - TransparentFX

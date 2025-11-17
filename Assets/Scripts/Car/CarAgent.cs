@@ -299,9 +299,9 @@ public class CarAgent : Agent
         var steering = Mathf.Clamp((float)vectorAction[0], -1.0f, 1.0f);
         float gasInput = 0.0f;
         if (!inReverse) {
-            gasInput = Mathf.Clamp((float)vectorAction[1], 0.0f, 1.0f);
+            gasInput = Mathf.Clamp((float)vectorAction[1], 0.05f, 1.0f);
         } else {
-            gasInput = Mathf.Clamp((float)vectorAction[1], -0.3f, 0.0f);
+            gasInput = Mathf.Clamp((float)vectorAction[1], -0.3f, -0.05f);
         }
         var braking = Mathf.Clamp((float)vectorAction[2], 0.0f, 1.0f);
 
@@ -454,5 +454,24 @@ public class CarAgent : Agent
 
         SetReward(reward);
         Done();
+    }
+
+    public void SetStartPose(Vector3 pos, Quaternion rot, bool alsoMove = true)
+    {
+        StartPosition = pos;
+        StartRotation = rot;
+        if (alsoMove)
+        {
+            if (CarRb != null)
+            {
+                CarRb.linearVelocity = Vector3.zero;
+                CarRb.angularVelocity = Vector3.zero;
+            }
+            transform.SetPositionAndRotation(pos, rot);
+            LastPosition = pos;
+            WaypointIndex = 0;
+            passLastPoint = false;
+            TotalDistance = 0f;
+        }
     }
 }
