@@ -13,7 +13,9 @@ public class StageManager : MonoBehaviour
     private string cameraAnchorName = "CameraAnchor";
     private float defaultFarClip = 1000f;
 
-    [SerializeField] private int generationFreqency = 3;
+    [SerializeField] private int generationFreqency = 1;
+    [SerializeField] private int stage4GenerationFreqency = 1;
+    [SerializeField] private int challenge2GenerationFreqency = 2;
 
     private GameObject currentStage;
 
@@ -38,18 +40,51 @@ public class StageManager : MonoBehaviour
         ApplyStageForGeneration(generation, forceReload: false);
     }
 
-    // 世代に応じてステージを決定（3世代ごとにインデックスを+1）
+    // 世代に応じてステージを決定（Challenge* は2世代、その他は1世代）
     private void ApplyStageForGeneration(int generation, bool forceReload) {
         if (stagePrefabs == null || stagePrefabs.Count == 0) {
             Debug.LogWarning("StageManager: stagePrefabs is empty.");
             return;
         }
-        int group = generation / generationFreqency; // 0,0,0,1,1,1,2,2,2,...
-        if (forceReload || group != lastGenGroup) {
-            lastGenGroup = group;
-            int newIdx = ((group % stagePrefabs.Count) + stagePrefabs.Count) % stagePrefabs.Count;
-            LoadStage(newIdx);
+
+        // 各ステージの保持世代数を決める（Challengeで始まるものは2、それ以外は1）
+        int[] freqs = new int[stagePrefabs.Count];
+        int cycleLength = 0;
+        for (int i = 0; i < stagePrefabs.Count; i++) {
+            var name = stagePrefabs[i]?.name ?? "";
+            if (name.StartsWith("Challenge2", StringComparison.OrdinalIgnoreCase)){
+                freqs[i] = challenge2GenerationFreqency;
+            } else if (name.StartsWith("Stage4", StringComparison.OrdinalIgnoreCase)) {
+                freqs[i] = stage4GenerationFreqency;
+            } else {
+                freqs[i] = generationFreqency;
+            }
+            cycleLength += freqs[i];
         }
+
+        if (cycleLength == 0) {
+            Debug.LogWarning("StageManager: cycleLength became 0.");
+            return;
+        }
+
+        // generation をサイクル長で折り返して現在位置を求める
+        int pos = generation % cycleLength;
+
+        // pos を使ってインデックスを決定
+        int selectedIdx = 0;
+        for (int i = 0; i < freqs.Length; i++) {
+            if (pos < freqs[i]) {
+                selectedIdx = i;
+                break;
+            }
+            pos -= freqs[i];
+        }
+
+        if (forceReload || selectedIdx != currentStageIdx || lastGenGroup == int.MinValue) {
+            lastGenGroup = generation; // 記録用（用途に応じ変更可）
+            LoadStage(selectedIdx);
+        }
+
         ApplyCameraFromStage();
     }
 

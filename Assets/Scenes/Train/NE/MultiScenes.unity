@@ -145,7 +145,12 @@ PrefabInstance:
     - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
         type: 3}
       propertyPath: targetSpeed
-      value: 7
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
+        type: 3}
+      propertyPath: highSpeedPenalty
+      value: -0.0005
       objectReference: {fileID: 0}
     - target: {fileID: 7648801937227814935, guid: 48764237b4fd4444482ea11373f92b16,
         type: 3}
@@ -253,13 +258,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageManager
   stagePrefabs:
-  - {fileID: 5775886053726417194, guid: 8f03f938c785c41a494ec0238741da0f, type: 3}
-  - {fileID: 9218594517221924777, guid: 84e7dee99978a4c328f254af57b48c6d, type: 3}
+  - {fileID: 2856323524690029583, guid: 41dc6f19d71764fe99ffd5dd892a31c4, type: 3}
   - {fileID: 1938081482075805023, guid: bdd8c8d6946224d9680787009b5065be, type: 3}
+  - {fileID: 9218594517221924777, guid: 84e7dee99978a4c328f254af57b48c6d, type: 3}
   - {fileID: 690205086517592658, guid: 89f7e2a4c2e284a538ad4ca3f9dabacb, type: 3}
   - {fileID: 2856323524690029583, guid: 41dc6f19d71764fe99ffd5dd892a31c4, type: 3}
-  - {fileID: 7393065393124761949, guid: 26a507e8b15004104bcac4702ef0c7aa, type: 3}
-  generationFreqency: 4
+  - {fileID: 8279728451272605594, guid: 7281385c5138d40599fe81435eab1d87, type: 3}
+  - {fileID: 5775886053726417194, guid: 8f03f938c785c41a494ec0238741da0f, type: 3}
+  - {fileID: 690205086517592658, guid: 89f7e2a4c2e284a538ad4ca3f9dabacb, type: 3}
+  generationFreqency: 1
+  stage4GenerationFreqency: 1
+  challenge2GenerationFreqency: 3
 --- !u!4 &839905266
 Transform:
   m_ObjectHideFlags: 0

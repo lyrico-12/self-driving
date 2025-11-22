@@ -299,9 +299,9 @@ public class CarAgent : Agent
         var steering = Mathf.Clamp((float)vectorAction[0], -1.0f, 1.0f);
         float gasInput = 0.0f;
         if (!inReverse) {
-            gasInput = Mathf.Clamp((float)vectorAction[1], 0.05f, 1.0f);
+            gasInput = Mathf.Clamp((float)vectorAction[1], 0.1f, 1.0f);
         } else {
-            gasInput = Mathf.Clamp((float)vectorAction[1], -0.3f, -0.05f);
+            gasInput = Mathf.Clamp((float)vectorAction[1], -0.3f, -0.1f);
         }
         var braking = Mathf.Clamp((float)vectorAction[2], 0.0f, 1.0f);
 
