@@ -19,7 +19,7 @@ MonoBehaviour:
   - 90
   - 110
   - 130
-  brainData: {fileID: 4900000, guid: cad8c7e0fcce446ae83a9125a4b0a339, type: 3}
+  brainData: {fileID: 4900000, guid: 8f90fdbf9b065419ea8fcb90dc2ec6fc, type: 3}
   brain:
     weights:
     - row: 9

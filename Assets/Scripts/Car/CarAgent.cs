@@ -53,6 +53,17 @@ public class CarAgent : Agent
     [SerializeField] private float nearWallPenalty = -0.0015f;    // 1ステップ減点
     [SerializeField] private bool useNearWallPenalty = false;
 
+    // Waypoint 通過ボーナス
+    [Header("Waypoint Reward")]
+    [SerializeField] private float waypointPassBonus = 1.0f; // 通過ボーナス（Inspectorで調整可）
+
+    // 急激な加速に対するペナルティ
+    [Header("Acceleration Penalty")]
+    [SerializeField] private bool useAccelerationPenalty = true; // 急加速ペナルティ有効化
+    [SerializeField] private float suddenAccelerationThreshold = 5.0f; // m/s^2 を超えたらペナルティ
+    [SerializeField] private float suddenAccelerationPenalty = -0.01f; // 閾値超過1 (m/s^2) あたりのペナルティ倍率（負の値）
+    private float lastSpeed = 0f; // 前フレームの速度（m/s）
+
     // エピソード内の速度統計
     private float speedSum = 0f;
     private int speedCount = 0;
@@ -83,6 +94,7 @@ public class CarAgent : Agent
         speedCount = 0;
         episodeMaxSpeed = 0f;
         episodeMinSpeed = float.PositiveInfinity;
+        lastSpeed = 0f;
     }
 
     public override void AgentReset() {
@@ -107,6 +119,7 @@ public class CarAgent : Agent
         speedCount = 0;
         episodeMaxSpeed = 0f;
         episodeMinSpeed = float.PositiveInfinity;
+        lastSpeed = 0f;
     }
 
     /// <summary>
@@ -295,6 +308,22 @@ public class CarAgent : Agent
         if (currentSpeed > episodeMaxSpeed) episodeMaxSpeed = currentSpeed;
         if (currentSpeed < episodeMinSpeed) episodeMinSpeed = currentSpeed;
 
+        // 急激な加速ペナルティ（正の加速度が閾値を超えた場合）
+        if (useAccelerationPenalty)
+        {
+            if (Time.fixedDeltaTime > 1e-6f)
+            {
+                float accel = (currentSpeed - lastSpeed) / Time.fixedDeltaTime; // m/s^2
+                if (accel > suddenAccelerationThreshold)
+                {
+                    float excess = accel - suddenAccelerationThreshold;
+                    // 閾値超過量に比例したペナルティを与える（suddenAccelerationPenalty は負の値を想定）
+                    float penalty = suddenAccelerationPenalty * excess;
+                    AddReward(penalty);
+                }
+            }
+        }
+
 
         var steering = Mathf.Clamp((float)vectorAction[0], -1.0f, 1.0f);
         float gasInput = 0.0f;
@@ -329,6 +358,8 @@ public class CarAgent : Agent
         }
 
         LastPosition = transform.position;
+        // 次フレーム用に速度を保存
+        lastSpeed = currentSpeed;
     }
 
     public override void GoStraight(){
@@ -376,6 +407,10 @@ public class CarAgent : Agent
         if(waypoint.IsLast) {
             WaypointIndex = 0;
             passLastPoint=true;
+        }
+        // Waypoint通過ボーナス
+        if (waypointPassBonus != 0f) {
+            AddReward(waypointPassBonus);
         }
         if(isBattle && WaypointIndex==1 && passLastPoint==true){
             agentExecutor.Win(agentIndex);
@@ -472,6 +507,7 @@ public class CarAgent : Agent
             WaypointIndex = 0;
             passLastPoint = false;
             TotalDistance = 0f;
+            lastSpeed = 0f;
         }
     }
 }

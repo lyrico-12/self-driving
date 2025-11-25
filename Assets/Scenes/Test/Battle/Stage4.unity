@@ -10452,9 +10452,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   agents:
   - agent: {fileID: 1306250754}
-    brain: {fileID: 11400000, guid: 1ca0e19baca3041e297ef4b3c8eef59d, type: 2}
-  - agent: {fileID: 1202737040}
     brain: {fileID: 11400000, guid: 3cfdf57d15b6b4578a622e72011b28fb, type: 2}
+  - agent: {fileID: 1202737040}
+    brain: {fileID: 11400000, guid: 1ca0e19baca3041e297ef4b3c8eef59d, type: 2}
   populationText: {fileID: 1192358965}
   name1Text: {fileID: 352332462}
   name2Text: {fileID: 1616561251}
